@@ -1,0 +1,23 @@
+{
+  "name": "he-validation",
+  "version": "1.0.0",
+  "description": "validate your inputs against some rules you defined, inspired from Laravel Validation",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ibrahim Saqr <ebrahimes@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ibrahimsaqr/he-validation.git"
+  },
+  "homepage": "https://github.com/ibrahimsaqr/he-validation#readme",
+  "keywords": [
+    "validate",
+    "validation",
+    "rules",
+    "laravel",
+    "inputs"
+  ]
+}
