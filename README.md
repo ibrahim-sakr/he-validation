@@ -90,7 +90,7 @@ but Notice that this is NOT Recommended because there is some Rules Depend on ot
 this will force the Validator to Unregister the Old `required` Rule and add Yours.
 
 
-### I'm Welcoming with any comment or advise or you can open new issue on [github](https://github.com/ibrahimsaqr/he-event-system/issues)
+### I'm Welcoming with any comment or advise or you can open new issue on [github](https://github.com/ibrahimsaqr/he-validation/issues)
 
 ### Todo List
 1. add more Rules
