@@ -24,8 +24,8 @@ exports = module.exports = {
     },
 
     numeric (value, data, rules, cb){
-        return ( Number(value).isNaN() ) ? cb("$s must be a number") : cb(null);
-        // return ( Number(value).toString() == "NaN" ) ? cb("$s must be a number") : cb(null);
+        var reg = /^\d+$/;
+        return ( !reg.test(value) ) ? cb("$s must be a number") : cb(null);
     },
 
     min (value, data, rules, cb){
