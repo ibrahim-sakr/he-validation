@@ -7,11 +7,11 @@
 ### quick How to use
 require the Core
 
-    var ValidatorCore = require('he-validator');
+    var ValidatorCore = require('he-validation');
 
 create new instance from Core
 
-    var Validator = new ValidatorCore;
+    var Validator = new ValidatorCore();
 
 after that you are ready to make you validation like so
 
@@ -24,72 +24,128 @@ it can be `req.body` if you use Expressjs or any Object
         "input": "value"
     }
 
-then you need to prepare the Rules that will contains all your validation rules
+then you need to prepare the Roles that will contains all your validation roles
 
-    var Rules = {
-        "input": ["required", "min:3", "max:100", "numeric"] // any Rule you need with it's options
+    var Roles = {
+        "input": ["required", "min:3", "max:100"] // any Role you need with it's options
     }
 
 finally run the `Validator`
 
-    var validation = Validator.make(Inputs, Rules);
+    var validation = Validator.make(Inputs, Roles);
     
-the Validator by Default returns Promise
+the Validator by Default returns Promise that always success with error message if any
 
-    validation.then(function success(){
-        // the Validator success with NO Errors at All
-    }, function fail(errors){
-        // the Validator failed and all Errors passed here
-    });
-
-OR and this is NOT Recommended You can pass a third parameter to `make` method and it's a Function that accept an erros param
-
-    Validator.make(Inputs, Rules, function callback(errors){
-        if (errors) {
-            // do your Logic here
-        } else { 
-            // there is No errors
+    validation.then(function success(errs){
+        if(errs) {
+            // retrun the errors
         }
+
+        // the Validator success with NO Errors at All
     });
-    
+
+OR with es6 async await
+
+    var validationErrors = await Validator.make(Inputs, Roles);
+
+    if(validationErrors) {
+        // return the erros
+    }
+
+    // the Validator success with NO Errors at All
+
+
 ## Go Deep Into Rabbit Hole
 
-#### if you need to add custom Rules or Extend the Validator
+#### if you need to add custom Roles or Extend the Validator
 
-first method => you can pass Object contains your Custom Rules then pass it to the constractor.
+first method => you can pass Object contains your Custom Roles then pass it to the constractor.
 
-    var RulesObject = {
-        "new_rule": function(value, data, rules, cb){
-            if(true){
-                return cb();
-            } else {
-                return cb("error message");
-            }
+    var RolesObject = {
+        "new_role": (options) => {
+            return new Promise((resolve, reject) => {
+                if(true){ resolve(); }
+                else { reject("$s error message"); }
+            });
         }
     };
+
     // create new instance from Core
-    var Validator = new ValidatorCore(RulesObject);
+    var Validator = new ValidatorCore(RolesObject);
 
-second method => you can add or register custom Rule after Intiating the Validator by using `register` method
+second method => you can add or register custom Role after Intiating the Validator by using `register` method
 
-    Validator.register("customRuleName", function(value, data, rules, cb){});
+    Validator.register("customRoleName", (options) => {
+        return new Promise((resolve, reject) => {
+            if(true){ resolve(); }
+            else { reject("$s error message"); }
+        });
+    });
 
-all registerd rules must have Handler that accept four required parameters `value`, `data`, `rules` and `cb`
-1. `value` => the value that User passed into Inputs Object.
-2. `data` => any data that User pass to the Rule ex-> `range:5,10` the data will be array `[5, 10]`.
-3. `rules` => the main RulesObject in case you need to interact with any Other Rule.
-4. `cb` OR `callback` => a function that return when all your logic finished either with null or with error message ex-> `return cb(null)` if value passed the test OR `return cb("$s must be a number")` an Error message that contains `$s` which will be replaced by Input Name.
+all registerd roles have Options parameter that contains four keys `value`, `roles`, `inputs` and `params`
+1. `value`  => the value that User passed into Inputs Object.
+2. `params` => any params that User pass to the Role ex-> `range:5,10` the data will be array `[5, 10]`.
+3. `roles`  => the main RolesObject in case you need to interact with any Other Role.
+4. `inputs` => the main inputs Object that contains all user input and values in case you need to interact with another value like `confirm:another_input_name`
+
+Notice => Any Role Must Return a promise and resolve it if vlidation success OR reject it if validator failed
+Notice => the `$s` in the error message will replace automaticly with the input name 
 
 #### Overwrite
-if there is a case when you need to replace exist rule with new one with the same name .. in other words you need to Overwrite exist Rule you can do this by add `:force` to the name of the Rule.
-but Notice that this is NOT Recommended because there is some Rules Depend on other Rules so be careful when you do this Overwriting thing.
+if there is a case when you need to replace exist role with new one with the same name .. in other words you need to Overwrite exist Role you can do this by add `:force` to the name of the Role.
+but Notice that this is NOT Recommended because there is some Roles Depend on other Roles so be careful when you do this Overwriting thing.
 
-    Validator.register("required:force", function(value, data, rules, cb){});
+    Validator.register("required:force", (options) => {});
 
-this will force the Validator to Unregister the Old `required` Rule and add Yours.
+this will force the Validator to Unregister the Old `required` Role and add Yours.
 
+#### Available Roles
+- required -----> the field must be presend and not Null
+
+- require_if:a -> the field will be required if field 'a' is present
+    require_if:a,b => the field will be required if field 'a' is equal to 'b'
+
+- string -------> the field must be string
+
+- number -------> the field must be number
+
+- array --------> the field must be array
+
+- alpha --------> the field must be string of alphabets only
+
+- alphanum -----> the field must be string of alphabets and numbers only
+
+- min:a --------> the field must be at least equal to 'a'
+    min:a => if the field string the will check the number of chars
+    min:a => if the field number will check the value
+    min:a => if the field array will check the length
+
+- max:a --------> the field must be at most equal to 'a'
+    max:a => if the field string the will check the number of chars
+    max:a => if the field number will check the value
+    max:a => if the field array will check the length
+
+- length:a -----> the field must be equal to 'a'
+    length:a => if the field string will check the number of chars
+    length:a => if the field number will check the value
+    length:a => if the field array will check the length
+
+- date_format --> the field must be with date format, Now we only support 'YYYY-MM-DD'
+
+- date_after:a -> the field must be date and must be grater than 'a'
+
+- in:a,b,c -----> the field value must be equal one of 'a, b, c'
+
+- not_in:a,b,c -> the field value must be NOT one of 'a, b, c'
+
+- between:a,b --> if the field is number then it's value must be between 'a, b'
+
+- boolean ------> the field must be true or false OR 'true' or 'false' as strings
+
+- equal:a ------> the field must be equal 'a'
+
+- email --------> the field must be an email
+
+- url  ---------> the field must be URL
 
 ### I'm Welcoming with any comment or advise or you can open new issue on [github](https://github.com/ibrahimsaqr/he-validation/issues)
-
-### Todo List
-1. add more Rules
