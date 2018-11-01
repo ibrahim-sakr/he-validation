@@ -1,6 +1,5 @@
 ## he-validation
 ##### @licence MIT
-##### the initial version
 
 ### Install
     npm install he-validation --save
