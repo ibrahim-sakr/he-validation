@@ -1,122 +1,398 @@
 /**
- * Default Validation Rules for he-validation
- * 
- * required .................................DONE
- * min:3 ....................................DONE
- * max:12 ...................................DONE
- * alpha ....................................DONE
- * alpha_num ................................DONE
- * numeric ..................................DONE
- * array ....................................DONE
- * between ..................................DONE
- * length ...................................DONE
- * confirmed:feild_name .....................DONE  // password match password_again
- * unique:table,column,excludeId ............DONE
- * not_in:1,2,3,4
- * boolean...................................DONE
- * timestamp.................................DONE
- * equals:example............................DONE
+ * every Role has a single parameter 'options' contains
+ * options.value
+ * options.roles
+ * options.inputs
+ * options.params
+ * @return {Promise}
  */
-exports = module.exports = {
-    required (value, data, rules, cb){
-        if (!value || Object.prototype.toString(value).length == 0 || value.length == 0) return cb("$s is required");
-        else return cb(null);
-    },
+module.exports = {
+  /**
+   * check if field present in the inputs and it's not undefined or null
+   * @param options
+   * @returns {Promise<string>}
+   */
+  required(options) {
+    return new Promise((resolve, reject) => {
+      if (typeof options.value === 'undefined' || options.value === null) {
+        reject("$s is required");
+      } else {
+        resolve();
+      }
+    });
+  },
 
-    numeric (value, data, rules, cb){
-        var reg = /^\d+$/;
-        return ( !reg.test(value) ) ? cb("$s must be a number") : cb(null);
-    },
+  /**
+   * mark a field as required only if another field exist or equal value
+   * @param options
+   * @returns {Promise<string>}
+   */
+  require_if(options) {
+    return new Promise((resolve, reject) => {
+      if (options.params.length === 1) {
+        // if the another field exist then this field is required
+        if (options.inputs[options.params[0]]) {
+          options.roles.required({
+            value: options.value,
+            roles: options.roles,
+            inputs: options.inputs,
+            params: []
+          }).then(() => {
+            resolve();
+          }, (error) => {
+            reject(error);
+          });
+        } else {
+          resolve();
+        }
+      } else if (options.params.length === 2) {
+        // if the another field equal to value then this field is required
+        if ( options.inputs[options.params[0]].toString() === options.params[1] ) {
+          options.roles.required({
+            value: options.value,
+            roles: options.roles,
+            inputs: options.inputs,
+            params: []
+          }).then(() => {
+            resolve();
+          }, (error) => {
+            reject(error);
+          });
+        } else {
+          resolve();
+        }
+      } else {
+        resolve();
+      }
+    });
+  },
 
-    min (value, data, rules, cb){
-        rules.numeric(value, '', rules, function(error){
-            if (error) {
-                if ( value.length < Number(data) ) return cb("$s must be " + data + " characters at least");
-                else return cb(null);
-            } else {
-                if ( Number(value) < Number(data) ) return cb("$s must be at least " + data);
-                else return cb(null);
-            };
-        });
-    },
+  /**
+   * check if the field is string if it present
+   * @param options
+   * @returns {Promise<string>}
+   */
+  string(options) {
+    return new Promise((resolve, reject) => {
+      if (options.value) {
+        if (typeof options.value === 'string') {
+          resolve();
+        } else {
+          reject('$s must be a string');
+        }
+      } else {
+        resolve();
+      }
+    });
+  },
 
-    max (value, data, rules, cb){
-        roles.numeric(value, '', function(error){
-            if (error) {
-                if ( value.length > Number(data) ) return cb("$s must be "+ data +" characters at most");
-                else return cb(null);
-            } else {
-                if ( Number(value) > Number(data) ) return cb("$s must be at most " + data);
-                else return cb(null);
-            }
-        });
-    },
+  /**
+   * check if value is a number
+   * @param options
+   * @returns {Promise<any>}
+   */
+  number(options) {
+    return new Promise((resolve, reject) => {
+      if (typeof options.value === 'number') {
+        resolve();
+      } else {
+        reject('$s must be a number');
+      }
+    });
+  },
 
-    timestamp (value, data, rules, cb){
-        if(!value.match(/^[0-9]+$/i)) return cb("$s must be a valid unix timestamp");
-        else return cb(null);
-    },
+  /**
+   * check if field is array
+   * @param options
+   * @returns {Promise<any>}
+   */
+  array(options) {
+    return new Promise((resolve, reject) => {
+      if (Array.isArray(options.value)) {
+        resolve();
+      } else {
+        reject('$s must be an array');
+      }
+    });
+  },
 
-    alpha (value, data, rules, cb){
-        if ( !value.match(/^[a-z\s]+$/i) ) return cb("$s must contain Letters Only [a-z]");
-        else return cb(null);
-    },
+  /**
+   * check if field has
+   * string =>  min chars
+   * array => min length
+   * int => min value
+   * @param options
+   * @returns {Promise<string>}
+   */
+  min(options) {
+    return new Promise((resolve, reject) => {
+      let min = 0;
+      let message = `can't get the length of ${typeof options.value}`;
+      if (typeof options.value === 'string') {
+        min = options.value.length;
+        message = `$s must be at least ${options.params[0]} characters`;
+      }
+      if (typeof options.value === 'number') {
+        min = options.value;
+        message = `$s must be minimum ${options.params[0]}`;
+      }
+      if (Array.isArray(options.value)) {
+        min = options.value.length;
+        message = `$s must be minimum length of ${options.params[0]}`;
+      }
 
-    alphanum (value, data, rules, cb){
-        if ( !value.match(/^[a-z0-9\s]+$/i) ) return cb("$s must contain Letters and Numbers Only [a-z][0-9]");
-        else return cb(null);
-    },
+      if (options.params[0] <= min) {
+        resolve();
+      } else {
+        reject(message);
+      }
+    });
+  },
 
-    array (value, data, rules, cb){
-        if ( !Array.isArray(value) ) return cb("$s must be an array");
-        else return cb(null);
-    },
+  /**
+   * check if field has
+   * string =>  max chars
+   * array => max length
+   * int => max value
+   * @param options
+   * @returns {Promise<string>}
+   */
+  max(options) {
+    return new Promise((resolve, reject) => {
+      let max = 0;
+      let message = `can't get the length of ${typeof options.value}`;
+      if (typeof options.value === 'string') {
+        max = options.value.length;
+        message = `$s must be less than or equal ${options.params[0]} characters`;
+      }
+      if (typeof options.value === 'number') {
+        max = options.value;
+        message = `$s must be maximum ${options.params[0]}`;
+      }
+      if (Array.isArray(options.value)) {
+        max = options.value.length;
+        message = `$s must be maximum length of ${options.params[0]}`;
+      }
 
-    between (value, data, rules, cb){
-        var data = data.split(',');
-        if ( value >= data[0] && value <= data[1] ) return cb(null);
-        else return cb("$s must be between '"+ data[0] +"' and '"+ data[1] +"'");
-    },
+      if (options.params[0] >= max) {
+        resolve();
+      } else {
+        reject(message);
+      }
+    });
+  },
 
-    confirmed (value, data, rules, cb){
-        if ( value !== targets[data] ) return cb("$s must be same as '"+ data + "'");
-        else return cb(null);
-    },
+  /**
+   * check if field has length of
+   * string =>  chars
+   * array => elements
+   * @param options
+   * @returns {Promise<string>}
+   */
+  length(options) {
+    return new Promise((resolve, reject) => {
+      let length = 0;
+      let message = `can't get the length of ${typeof options.value}`;
+      if (typeof options.value === 'string') {
+        length = options.value.length;
+        message = `$s must be equal ${options.params[0]} characters`;
+      }
+      if (Array.isArray(options.value)) {
+        length = options.value.length;
+        message = `$s must be length of ${options.params[0]}`;
+      }
 
-    length (value, data, rules, cb){
-        if ( typeof value === "object" ) {
-            if ( Array.isArray(value) ) {
-                if ( value.length < data ) return cb("$s must be at least " + data);
-                else return cb(null);
-            } else {
-                if ( !Object.keys(value).length < data ) return cb("$s must be at least " + data);
-                else return cb(null);
-            }
-        } else return cb("$s must be an array or object with length at least " + data );
-    },
+      if (options.params[0] === length) {
+        resolve();
+      } else {
+        reject(message);
+      }
+    });
+  },
 
-    time (value, data, rules, cb){ // 00:00 or 00:00:00
-        if ( !value.match(/^(([0-1]?[0-9])|([2][0-3])):([0-5]?[0-9])(:([0-5]?[0-9]))?$/i) ) return cb("$s must be a valid time (00:00) or (00:00:00)");
-        else return cb(null);
-    },
+  /**
+   * check if the filed has a date with specific format
+   * @TODO pass the format as params
+   * @param options
+   * @returns {Promise<string>}
+   */
+  date_format(options) {
+    return new Promise((resolve, reject) => {
+      if ((new Date(options.value) !== "Invalid Date") && !Number.isNaN(new Date(options.value))) {
+        // it's already a date so we check the format
+        const regex = /^\d{4}-\d{2}-\d{2}$/; // YYYY-MM-DD
+        if (options.value.match(regex)) {
+          // the format is correct
+          resolve();
+        } else {
+          // wrong format
+          reject('$s must be a Date formatted with YYYY-MM-DD format');
+        }
+      } else {
+        // not a date
+        reject('$s must be a Date formatted with YYYY-MM-DD format');
+      }
+    });
+  },
 
-    timesql (value, data, rules, cb){ // must be 00:00:00
-        if ( !value.match(/(([0-1][0-9])|([2][0-3])):([0-5][0-9]):([0-5][0-9])/i) ) return cb("$s must be a valid time (00:00:00)");
-        else return cb(null);
-    },
+  /**
+   * check if the date is grater than or equal another
+   * @param options
+   * @returns {Promise<string>}
+   */
+  date_after(options) {
+    return new Promise((resolve, reject) => {
+      if (Date.parse(options.value) > Date.parse(options.params[0])) {
+        resolve();
+      } else {
+        reject(`$s must be a date before ${options.params[0]}`);
+      }
+    });
+  },
 
-    date (value, data, rules, cb){
-        if ( !value.match(/([2][0-9][0-9][0-9])-([0-1][0-9])-([0-3][0-9])/i) || !value instanceof Date) return cb("$s must be a valid date (0000-00-00)");
-        else return cb(null);
-    },
+  /**
+   * check if field value exist in the passed values
+   * @param options
+   * @returns {Promise<string>}
+   */
+  in(options) {
+    return new Promise((resolve, reject) => {
+      if (options.params.indexOf(options.value.toString()) > -1) {
+        resolve();
+      } else {
+        reject(`$s must be equal one of these ${options.params.join(', ')}`);
+      }
+    });
+  },
 
-    boolean (value, data, rules, cb){
-        if(!/(true)|(false)/.test(value)) return cb("$s must be a valid boolean or stringfied boolean");
-        else return cb(null);
-    },
+  /**
+   * check if field value doesn't exist in the passed values
+   * @param options
+   * @returns {Promise<string>}
+   */
+  not_in(options) {
+    return new Promise((resolve, reject) => {
+      if (options.params.indexOf(options.value.toString()) === -1) {
+        resolve();
+      } else {
+        reject(`$s must be different than these ${options.params.join(', ')}`);
+      }
+    });
+  },
 
-    equals (value, data, rules, cb){
-        if(value != data ) return cb("$s must equal " + data);
-        else return cb(null);
-    }
+  /**
+   * check if field have only alphabet characters
+   * @param options
+   * @returns {Promise<string>}
+   */
+  alpha(options){
+    return new Promise((resolve, reject) => {
+      if ( options.value.match(/^[a-z\s]+$/i) ) {
+        resolve();
+      } else {
+        reject("$s must contain Letters Only [a-z]");
+      }
+    });
+  },
+
+  /**
+   * check if field have only alphabet and numbers characters
+   * @param options
+   * @returns {Promise<string>}
+   */
+  alphanum(options){
+    return new Promise((resolve, reject) => {
+      if ( options.value.match(/^[a-z0-9\s]+$/i) ) {
+        resolve();
+      }
+      else {
+        reject("$s must contain Letters and Numbers Only [a-z][0-9]");
+      }
+    });
+  },
+
+  /**
+   * check if field value between two values
+   * @param options
+   * @returns {Promise<string>}
+   */
+  between(options){
+    return new Promise((resolve, reject) => {
+      if ( options.value >= options.params[0] && options.value <= options.params[1] ) {
+        resolve();
+      } else {
+        reject(`$s must be between '${options.params[0]}' and '${options.params[1]}'`);
+      }
+    });
+  },
+
+  /**
+   * check if field value is boolean
+   * @param options
+   * @returns {Promise<string>}
+   */
+  boolean(options){
+    return new Promise((resolve, reject) => {
+      if(options.value.match(/(true)|(false)/)) {
+        resolve();
+      } else {
+        reject("$s must be a valid boolean or stringfied boolean");
+      }
+    });
+  },
+
+  /**
+   * check if field value is equal to another field
+   * @param options
+   * @returns {Promise<string>}
+   */
+  match(options) {
+    return new Promise((resolve, reject) => {
+      if(options.value === options.inputs[options.params[0]]) {
+        resolve();
+      } else {
+        reject(`$s must be the same as ${options.params[0]}`);
+      }
+    });
+  },
+
+  /**
+   * check if field value is email
+   * @param options
+   * @returns {Promise<string>}
+   */
+  email(options) {
+    return new Promise((resolve, reject) => {
+      if(options.value) {
+        const email = /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
+        if (options.value.match(email)) {
+          resolve();
+        } else {
+          reject('$s must be a valid email');
+        }
+      } else {
+        resolve();
+      }
+    });
+  },
+
+  /**
+   * check if field value is URL
+   * @param options
+   * @returns {Promise<string>}
+   */
+  url(options) {
+    return new Promise((resolve, reject) => {
+      if(options.value) {
+        const urlRegex = new RegExp("^(http[s]?:\\/\\/(www\\.)?|ftp:\\/\\/(www\\.)?|(www\\.)?){1}([0-9A-Za-z-\\.@:%_\+~#=]+)+((\\.[a-zA-Z]{2,3})+)(/(.)*)?(\\?(.)*)?");
+        if (options.value.length < 2083 && options.value.match(urlRegex)) {
+          resolve();
+        } else {
+          reject('$s must be a valid URL');
+        }
+      } else {
+        resolve();
+      }
+    });
+  }
 };
