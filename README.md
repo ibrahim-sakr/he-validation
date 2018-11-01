@@ -27,7 +27,7 @@ it can be `req.body` if you use Expressjs or any Object
 then you need to prepare the Roles that will contains all your validation roles
 
     var Roles = {
-        "input": ["required", "min:3", "max:100", "numeric"] // any Role you need with it's options
+        "input": ["required", "min:3", "max:100"] // any Role you need with it's options
     }
 
 finally run the `Validator`
@@ -99,5 +99,53 @@ but Notice that this is NOT Recommended because there is some Roles Depend on ot
 
 this will force the Validator to Unregister the Old `required` Role and add Yours.
 
+#### Available Roles
+- required -----> the field must be presend and not Null
+
+- require_if:a -> the field will be required if field 'a' is present
+    require_if:a,b => the field will be required if field 'a' is equal to 'b'
+
+- string -------> the field must be string
+
+- number -------> the field must be number
+
+- array --------> the field must be array
+
+- alpha --------> the field must be string of alphabets only
+
+- alphanum -----> the field must be string of alphabets and numbers only
+
+- min:a --------> the field must be at least equal to 'a'
+    min:a => if the field string the will check the number of chars
+    min:a => if the field number will check the value
+    min:a => if the field array will check the length
+
+- max:a --------> the field must be at most equal to 'a'
+    max:a => if the field string the will check the number of chars
+    max:a => if the field number will check the value
+    max:a => if the field array will check the length
+
+- length:a -----> the field must be equal to 'a'
+    length:a => if the field string will check the number of chars
+    length:a => if the field number will check the value
+    length:a => if the field array will check the length
+
+- date_format --> the field must be with date format, Now we only support 'YYYY-MM-DD'
+
+- date_after:a -> the field must be date and must be grater than 'a'
+
+- in:a,b,c -----> the field value must be equal one of 'a, b, c'
+
+- not_in:a,b,c -> the field value must be NOT one of 'a, b, c'
+
+- between:a,b --> if the field is number then it's value must be between 'a, b'
+
+- boolean ------> the field must be true or false OR 'true' or 'false' as strings
+
+- equal:a ------> the field must be equal 'a'
+
+- email --------> the field must be an email
+
+- url  ---------> the field must be URL
 
 ### I'm Welcoming with any comment or advise or you can open new issue on [github](https://github.com/ibrahimsaqr/he-validation/issues)
