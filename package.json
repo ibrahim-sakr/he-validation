@@ -1,13 +1,13 @@
 {
   "name": "he-validation",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "validate your inputs against some roles you defined, inspired from Laravel Validation",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Ibrahim Sakr <ebrahimes@gmail.com>",
-  "license": "MIT",
+  "license": "GPL",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ibrahim-sakr/he-validation.git"
@@ -21,5 +21,8 @@
     "inputs",
     "roles",
     "laravel"
-  ]
+  ],
+  "dependencies": {
+    "date-format-lite": "^17.7.0"
+  }
 }

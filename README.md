@@ -7,53 +7,40 @@
 ### quick How to use
 require the Core
 
-    var ValidatorCore = require('he-validation');
+    const ValidatorCore = require('he-validator');
 
 create new instance from Core
 
-    var Validator = new ValidatorCore();
+    const Validator = new ValidatorCore;
 
-after that you are ready to make you validation like so
+after that you are ready to make your validation like so
 
 first prepare your Inputs Object which contains all inputs that you need to validate
-it can be `req.body` if you use Expressjs or any Object
+it can be `req.body` if you use Express js or any Object
 
-    var Inputs = req.body;
+    const Inputs = req.body;
     // OR
-    var Inputs = {
+    const Inputs = {
         "input": "value"
     }
 
 then you need to prepare the Roles that will contains all your validation roles
 
-    var Roles = {
-        "input": ["required", "min:3", "max:100"] // any Role you need with it's options
+    const Roles = {
+        "input": ["required", "min:3", "max:100", "numeric"] // any Role you need with it's options
     }
 
 finally run the `Validator`
 
-    var validation = Validator.make(Inputs, Roles);
+    const validation = Validator.make(Inputs, Roles);
     
-the Validator by Default returns Promise that always success with error message if any
+the Validator by Default returns Promise
 
-    validation.then(function success(errs){
-        if(errs) {
-            // retrun the errors
-        }
-
+    validation.then(function success(){
         // the Validator success with NO Errors at All
+    }, function fail(errors){
+        // the Validator failed and all Errors passed here
     });
-
-OR with es6 async await
-
-    var validationErrors = await Validator.make(Inputs, Roles);
-
-    if(validationErrors) {
-        // return the erros
-    }
-
-    // the Validator success with NO Errors at All
-
 
 ## Go Deep Into Rabbit Hole
 
@@ -61,35 +48,33 @@ OR with es6 async await
 
 first method => you can pass Object contains your Custom Roles then pass it to the constractor.
 
-    var RolesObject = {
+    const RolesObject = {
         "new_role": (options) => {
             return new Promise((resolve, reject) => {
-                if(true){ resolve(); }
-                else { reject("$s error message"); }
+                if(validationPassed === true){
+                    return resolve();
+                }
+
+                return reject("$s failed with error message");
             });
         }
     };
 
     // create new instance from Core
-    var Validator = new ValidatorCore(RolesObject);
+    const Validator = new ValidatorCore(RolesObject);
 
 second method => you can add or register custom Role after Intiating the Validator by using `register` method
 
-    Validator.register("customRoleName", (options) => {
-        return new Promise((resolve, reject) => {
-            if(true){ resolve(); }
-            else { reject("$s error message"); }
-        });
-    });
+    Validator.register("customRoleName", (options) => {});
 
-all registerd roles have Options parameter that contains four keys `value`, `roles`, `inputs` and `params`
-1. `value`  => the value that User passed into Inputs Object.
-2. `params` => any params that User pass to the Role ex-> `range:5,10` the data will be array `[5, 10]`.
-3. `roles`  => the main RolesObject in case you need to interact with any Other Role.
-4. `inputs` => the main inputs Object that contains all user input and values in case you need to interact with another value like `confirm:another_input_name`
+all registerd role must have Handler that accept `options` parameters that contains `value`, `params`, `inputs` and `roles`
 
-Notice => Any Role Must Return a promise and resolve it if vlidation success OR reject it if validator failed
-Notice => the `$s` in the error message will replace automaticly with the input name 
+1. `value` => the value that User passed into Inputs Object.
+2. `params` => any additional params the passed to the role
+3. `inputs` => all user inputs in it's original shap in case you need to access another value.
+4. `roles` => the main RolesObject in case you need to interact with any Other Role.
+
+**Notice: any error message should contain `$s` that will replaced with the input name**
 
 #### Overwrite
 if there is a case when you need to replace exist role with new one with the same name .. in other words you need to Overwrite exist Role you can do this by add `:force` to the name of the Role.
@@ -99,53 +84,145 @@ but Notice that this is NOT Recommended because there is some Roles Depend on ot
 
 this will force the Validator to Unregister the Old `required` Role and add Yours.
 
-#### Available Roles
-- required -----> the field must be presend and not Null
+## Availabile Roles
 
-- require_if:a -> the field will be required if field 'a' is present
-    require_if:a,b => the field will be required if field 'a' is equal to 'b'
+<table>
+    <tr>
+        <th>Name</th>
+        <th>Parameters</th>
+        <th>Description</th>
+    </tr>
+    <tr>
+        <td>accepted</td>
+        <td></td>
+        <td>the field must be one of these values 'yes, on, 1, or true', usefull on forms confirmation.</td>
+    </tr>
+    <tr>
+        <td>required</td>
+        <td></td>
+        <td>the field must be presend and not Null</td>
+    </tr>
+    <tr>
+        <td>require_if</td>
+        <td>anotherField, value</td>
+        <td>
+            1- the field will be required if field 'anotherField' is present.</br>
+            2- the field will be required if field 'anotherField' is equal to 'value'
+        </td>
+    </tr>
+    <tr>
+        <td>string</td>
+        <td></td>
+        <td>the field must be string</td>
+    </tr>
+    <tr>
+        <td>number</td>
+        <td></td>
+        <td>the field must be number</td>
+    </tr>
+    <tr>
+        <td>array</td>
+        <td></td>
+        <td>the field must be array</td>
+    </tr>
+    <tr>
+        <td>min</td>
+        <td>value</td>
+        <td>
+            the field must be at least equal to 'value' AND if the field</br>
+            1- string => then we check the number of chars</br>
+            2- number => then we check the value</br>
+            3- array => then we check the length
+        </td>
+    </tr>
+    <tr>
+        <td>max</td>
+        <td>value</td>
+        <td>
+            the field must be at most equal to 'value' AND if the field</br>
+            1- string => then we check the number of chars</br>
+            2- number => then we check the value</br>
+            3- array => then we check the length
+        </td>
+    </tr>
+    <tr>
+        <td>length</td>
+        <td>value</td>
+        <td>
+            the field must be equal to 'value' AND if the field</br>
+            1- string => then we check the number of chars</br>
+            2- number => then we check the value</br>
+            3- array => then we check the length
+        </td>
+    </tr>
+    <tr>
+        <td>date</td>
+        <td></td>
+        <td>the field must be a valid date, with any format</td>
+    </tr>
+    <tr>
+        <td>date_format</td>
+        <td>value</td>
+        <td>the field must be a valid date with 'value' format</td>
+    </tr>
+    <tr>
+        <td>date_after</td>
+        <td>value</td>
+        <td>the field must be a valid date and must be grater than 'value'</td>
+    </tr>
+    <tr>
+        <td>date_before</td>
+        <td>value</td>
+        <td>the field must be a valid date and must be less than 'value'</td>
+    </tr>
+    <tr>
+        <td>in</td>
+        <td>value1, value2, ..etc</td>
+        <td>the field value must be equal one of 'value1, value2, ..etc'</td>
+    </tr>
+    <tr>
+        <td>not_in</td>
+        <td>value1, value2, ..etc</td>
+        <td>the field value must be NOT one of 'value1, value2, ..etc'</td>
+    </tr>
+    <tr>
+        <td>alpha</td>
+        <td></td>
+        <td>the field must be string of alphabets only</td>
+    </tr>
+    <tr>
+        <td>alphanum</td>
+        <td></td>
+        <td>the field must be string of alphabets and numbers only</td>
+    </tr>
+    <tr>
+        <td>between</td>
+        <td>value1, value2</td>
+        <td>if the field is number then it's value must be between 'value1, value2'</td>
+    </tr>
+    <tr>
+        <td>boolean</td>
+        <td></td>
+        <td>the field must be true or false OR 'true' or 'false' as strings</td>
+    </tr>
+    <tr>
+        <td>match</td>
+        <td>value</td>
+        <td>the field must be equal 'value'</td>
+    </tr>
+    <tr>
+        <td>email</td>
+        <td></td>
+        <td>the field must be a valid email</td>
+    </tr>
+    <tr>
+        <td>url</td>
+        <td></td>
+        <td>the field must be a valid URL</td>
+    </tr>
+</table>
 
-- string -------> the field must be string
-
-- number -------> the field must be number
-
-- array --------> the field must be array
-
-- alpha --------> the field must be string of alphabets only
-
-- alphanum -----> the field must be string of alphabets and numbers only
-
-- min:a --------> the field must be at least equal to 'a'
-    min:a => if the field string the will check the number of chars
-    min:a => if the field number will check the value
-    min:a => if the field array will check the length
-
-- max:a --------> the field must be at most equal to 'a'
-    max:a => if the field string the will check the number of chars
-    max:a => if the field number will check the value
-    max:a => if the field array will check the length
-
-- length:a -----> the field must be equal to 'a'
-    length:a => if the field string will check the number of chars
-    length:a => if the field number will check the value
-    length:a => if the field array will check the length
-
-- date_format --> the field must be with date format, Now we only support 'YYYY-MM-DD'
-
-- date_after:a -> the field must be date and must be grater than 'a'
-
-- in:a,b,c -----> the field value must be equal one of 'a, b, c'
-
-- not_in:a,b,c -> the field value must be NOT one of 'a, b, c'
-
-- between:a,b --> if the field is number then it's value must be between 'a, b'
-
-- boolean ------> the field must be true or false OR 'true' or 'false' as strings
-
-- equal:a ------> the field must be equal 'a'
-
-- email --------> the field must be an email
-
-- url  ---------> the field must be URL
+## License
+This project is licensed under the GPL v3 License - see the [LICENSE.md](LICENSE.md) file for details
 
 ### I'm Welcoming with any comment or advise or you can open new issue on [github](https://github.com/ibrahimsaqr/he-validation/issues)

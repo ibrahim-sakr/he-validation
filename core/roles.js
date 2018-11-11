@@ -1,3 +1,5 @@
+const dfl = require("date-format-lite");
+
 /**
  * every Role has a single parameter 'options' contains
  * options.value
@@ -7,6 +9,27 @@
  * @return {Promise}
  */
 module.exports = {
+
+  /**
+   * check if the field value is one of these `yes, on, 1, or true`
+   * usefull for accept forms like 'terms and conditions'
+   * @param options
+   * @returns {Promise<string>}
+   */
+  accepted(options) {
+    return new Promise((resolve, reject) => {
+      if(options.value === 'yes' ||
+        options.value === 'on' ||
+        options.value === 1 ||
+        options.value === true
+      ) {
+        return resolve();
+      }
+
+      return reject('$s must be accepted');
+    });
+  },
+  
   /**
    * check if field present in the inputs and it's not undefined or null
    * @param options
@@ -29,41 +52,23 @@ module.exports = {
    */
   require_if(options) {
     return new Promise((resolve, reject) => {
-      if (options.params.length === 1) {
-        // if the another field exist then this field is required
-        if (options.inputs[options.params[0]]) {
-          options.roles.required({
+      const equal = (options.params.length === 2) ? options.params[1] : true;
+      if (options.inputs[options.params[0]] === equal) {
+        try {
+          await options.roles.required({
             value: options.value,
             roles: options.roles,
             inputs: options.inputs,
             params: []
-          }).then(() => {
-            resolve();
-          }, (error) => {
-            reject(error);
           });
-        } else {
-          resolve();
+
+          return resolve();
+        } catch(error) {
+          return reject(error);
         }
-      } else if (options.params.length === 2) {
-        // if the another field equal to value then this field is required
-        if ( options.inputs[options.params[0]].toString() === options.params[1] ) {
-          options.roles.required({
-            value: options.value,
-            roles: options.roles,
-            inputs: options.inputs,
-            params: []
-          }).then(() => {
-            resolve();
-          }, (error) => {
-            reject(error);
-          });
-        } else {
-          resolve();
-        }
-      } else {
-        resolve();
       }
+
+      return resolve();
     });
   },
 
@@ -74,15 +79,11 @@ module.exports = {
    */
   string(options) {
     return new Promise((resolve, reject) => {
-      if (options.value) {
-        if (typeof options.value === 'string') {
-          resolve();
-        } else {
-          reject('$s must be a string');
-        }
-      } else {
-        resolve();
+      if (typeof options.value === 'string') {
+        return resolve();
       }
+
+      reject('$s must be a string');
     });
   },
 
@@ -94,10 +95,10 @@ module.exports = {
   number(options) {
     return new Promise((resolve, reject) => {
       if (typeof options.value === 'number') {
-        resolve();
-      } else {
-        reject('$s must be a number');
+        return resolve();
       }
+
+      reject('$s must be a number');
     });
   },
 
@@ -109,10 +110,10 @@ module.exports = {
   array(options) {
     return new Promise((resolve, reject) => {
       if (Array.isArray(options.value)) {
-        resolve();
-      } else {
-        reject('$s must be an array');
+        return resolve();
       }
+
+      reject('$s must be an array');
     });
   },
 
@@ -128,24 +129,28 @@ module.exports = {
     return new Promise((resolve, reject) => {
       let min = 0;
       let message = `can't get the length of ${typeof options.value}`;
+
+      // const type 
       if (typeof options.value === 'string') {
         min = options.value.length;
         message = `$s must be at least ${options.params[0]} characters`;
       }
+
       if (typeof options.value === 'number') {
         min = options.value;
         message = `$s must be minimum ${options.params[0]}`;
       }
+
       if (Array.isArray(options.value)) {
         min = options.value.length;
         message = `$s must be minimum length of ${options.params[0]}`;
       }
 
       if (options.params[0] <= min) {
-        resolve();
-      } else {
-        reject(message);
+        return resolve();
       }
+
+      reject(message);
     });
   },
 
@@ -161,24 +166,27 @@ module.exports = {
     return new Promise((resolve, reject) => {
       let max = 0;
       let message = `can't get the length of ${typeof options.value}`;
+
       if (typeof options.value === 'string') {
         max = options.value.length;
         message = `$s must be less than or equal ${options.params[0]} characters`;
       }
+
       if (typeof options.value === 'number') {
         max = options.value;
         message = `$s must be maximum ${options.params[0]}`;
       }
+
       if (Array.isArray(options.value)) {
         max = options.value.length;
         message = `$s must be maximum length of ${options.params[0]}`;
       }
 
       if (options.params[0] >= max) {
-        resolve();
-      } else {
-        reject(message);
+        return resolve();
       }
+
+      reject(message);
     });
   },
 
@@ -193,20 +201,39 @@ module.exports = {
     return new Promise((resolve, reject) => {
       let length = 0;
       let message = `can't get the length of ${typeof options.value}`;
+      
       if (typeof options.value === 'string') {
         length = options.value.length;
         message = `$s must be equal ${options.params[0]} characters`;
       }
+      
       if (Array.isArray(options.value)) {
         length = options.value.length;
         message = `$s must be length of ${options.params[0]}`;
       }
 
       if (options.params[0] === length) {
-        resolve();
-      } else {
-        reject(message);
+        return resolve();
       }
+
+      reject(message);
+    });
+  },
+
+  /**
+   * check if the filed is a valid date
+   * @param options
+   * @returns {Promise<string>}
+   */
+  date(options) {
+    return new Promise((resolve, reject) => {
+      const toDate = new Date(options.value);
+      if (toDate === "Invalid Date" || Number.isNaN(toDate)) {
+        // not a date
+        return reject('$s must be a valid Date');
+      }
+
+      return resolve();
     });
   },
 
@@ -218,20 +245,20 @@ module.exports = {
    */
   date_format(options) {
     return new Promise((resolve, reject) => {
-      if ((new Date(options.value) !== "Invalid Date") && !Number.isNaN(new Date(options.value))) {
+      const toDate = new Date(options.value);
+
+      if (toDate !== "Invalid Date" && !Number.isNaN(toDate)) {
         // it's already a date so we check the format
-        const regex = /^\d{4}-\d{2}-\d{2}$/; // YYYY-MM-DD
-        if (options.value.match(regex)) {
+        const newForamt = toDate.format(options.params[0]);
+
+        if (options.value === newForamt) {
           // the format is correct
-          resolve();
-        } else {
-          // wrong format
-          reject('$s must be a Date formatted with YYYY-MM-DD format');
+          return resolve();
         }
-      } else {
-        // not a date
-        reject('$s must be a Date formatted with YYYY-MM-DD format');
       }
+
+      // wrong format or not a date
+      reject(`$s must be a valid Date formatted with ${options.params[0]} format`);
     });
   },
 
@@ -243,10 +270,25 @@ module.exports = {
   date_after(options) {
     return new Promise((resolve, reject) => {
       if (Date.parse(options.value) > Date.parse(options.params[0])) {
-        resolve();
-      } else {
-        reject(`$s must be a date before ${options.params[0]}`);
+        return resolve();
       }
+
+      reject(`$s must be a date before ${options.params[0]}`);
+    });
+  },
+
+  /**
+   * check if the date is less than or equal another
+   * @param options
+   * @returns {Promise<string>}
+   */
+  date_before(options) {
+    return new Promise((resolve, reject) => {
+      if (Date.parse(options.value) < Date.parse(options.params[0])) {
+        return resolve();
+      }
+
+      reject(`$s must be a date after ${options.params[0]}`);
     });
   },
 
@@ -258,10 +300,10 @@ module.exports = {
   in(options) {
     return new Promise((resolve, reject) => {
       if (options.params.indexOf(options.value.toString()) > -1) {
-        resolve();
-      } else {
-        reject(`$s must be equal one of these ${options.params.join(', ')}`);
+        return resolve();
       }
+
+      reject(`$s must be equal one of these ${options.params.join(', ')}`);
     });
   },
 
@@ -273,10 +315,10 @@ module.exports = {
   not_in(options) {
     return new Promise((resolve, reject) => {
       if (options.params.indexOf(options.value.toString()) === -1) {
-        resolve();
-      } else {
-        reject(`$s must be different than these ${options.params.join(', ')}`);
+        return resolve();
       }
+
+      reject(`$s must be different than these ${options.params.join(', ')}`);
     });
   },
 
@@ -288,10 +330,10 @@ module.exports = {
   alpha(options){
     return new Promise((resolve, reject) => {
       if ( options.value.match(/^[a-z\s]+$/i) ) {
-        resolve();
-      } else {
-        reject("$s must contain Letters Only [a-z]");
+        return resolve();
       }
+
+      reject("$s must contain Letters Only [a-z]");
     });
   },
 
@@ -303,11 +345,10 @@ module.exports = {
   alphanum(options){
     return new Promise((resolve, reject) => {
       if ( options.value.match(/^[a-z0-9\s]+$/i) ) {
-        resolve();
+        return resolve();
       }
-      else {
-        reject("$s must contain Letters and Numbers Only [a-z][0-9]");
-      }
+
+      reject("$s must contain Letters and Numbers Only [a-z][0-9]");
     });
   },
 
@@ -319,10 +360,10 @@ module.exports = {
   between(options){
     return new Promise((resolve, reject) => {
       if ( options.value >= options.params[0] && options.value <= options.params[1] ) {
-        resolve();
-      } else {
-        reject(`$s must be between '${options.params[0]}' and '${options.params[1]}'`);
+        return resolve();
       }
+
+      reject(`$s must be between '${options.params[0]}' and '${options.params[1]}'`);
     });
   },
 
@@ -334,10 +375,10 @@ module.exports = {
   boolean(options){
     return new Promise((resolve, reject) => {
       if(options.value.match(/(true)|(false)/)) {
-        resolve();
-      } else {
-        reject("$s must be a valid boolean or stringfied boolean");
+        return resolve();
       }
+
+      reject("$s must be a valid boolean or stringfied boolean");
     });
   },
 
@@ -346,13 +387,13 @@ module.exports = {
    * @param options
    * @returns {Promise<string>}
    */
-  equal(options) {
+  match(options) {
     return new Promise((resolve, reject) => {
       if(options.value === options.inputs[options.params[0]]) {
-        resolve();
-      } else {
-        reject(`$s must be the same as ${options.params[0]}`);
+        return resolve();
       }
+
+      reject(`$s must be the same as ${options.params[0]}`);
     });
   },
 
@@ -363,16 +404,12 @@ module.exports = {
    */
   email(options) {
     return new Promise((resolve, reject) => {
-      if(options.value) {
-        const email = /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
-        if (options.value.match(email)) {
-          resolve();
-        } else {
-          reject('$s must be a valid email');
-        }
-      } else {
-        resolve();
+      const email = /^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
+      if (options.value.match(email)) {
+        return resolve();
       }
+
+      reject('$s must be a valid email');
     });
   },
 
@@ -383,16 +420,12 @@ module.exports = {
    */
   url(options) {
     return new Promise((resolve, reject) => {
-      if(options.value) {
-        const urlRegex = new RegExp("^(http[s]?:\\/\\/(www\\.)?|ftp:\\/\\/(www\\.)?|(www\\.)?){1}([0-9A-Za-z-\\.@:%_\+~#=]+)+((\\.[a-zA-Z]{2,3})+)(/(.)*)?(\\?(.)*)?");
-        if (options.value.length < 2083 && options.value.match(urlRegex)) {
-          resolve();
-        } else {
-          reject('$s must be a valid URL');
-        }
-      } else {
-        resolve();
+      const urlRegex = new RegExp("^(http[s]?:\\/\\/(www\\.)?|ftp:\\/\\/(www\\.)?|(www\\.)?){1}([0-9A-Za-z-\\.@:%_\+~#=]+)+((\\.[a-zA-Z]{2,3})+)(/(.)*)?(\\?(.)*)?");
+      if (options.value.length < 2083 && options.value.match(urlRegex)) {
+        return resolve();
       }
+
+      reject('$s must be a valid URL');
     });
   }
 };
