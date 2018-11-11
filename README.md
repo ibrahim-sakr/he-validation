@@ -1,76 +1,95 @@
 ## he-validation
-##### @licence MIT
+##### @licence GPL v3
 
 ### Install
-    npm install he-validation --save
+
+```
+# npm install he-validation --save
+```
 
 ### quick How to use
 require the Core
 
-    const ValidatorCore = require('he-validator');
+```javascript
+const ValidatorCore = require('he-validator');
+```
 
 create new instance from Core
 
-    const Validator = new ValidatorCore;
+```javascript
+const Validator = new ValidatorCore;
+```
 
 after that you are ready to make your validation like so
 
 first prepare your Inputs Object which contains all inputs that you need to validate
 it can be `req.body` if you use Express js or any Object
 
-    const Inputs = req.body;
-    // OR
-    const Inputs = {
-        "input": "value"
-    }
+```javascript
+const Inputs = req.body;
+// OR
+const Inputs = {
+    "input": "value"
+}
+```
 
 then you need to prepare the Roles that will contains all your validation roles
 
-    const Roles = {
-        "input": ["required", "min:3", "max:100", "numeric"] // any Role you need with it's options
-    }
+```javascript
+const Roles = {
+    // any Role you need with it's options
+    "input": ["required", "min:3", "max:100", "numeric"]
+}
+```
 
 finally run the `Validator`
 
-    const validation = Validator.make(Inputs, Roles);
-    
+```javascript
+const validation = Validator.make(Inputs, Roles);
+```
 the Validator by Default returns Promise
-
-    validation.then(function success(){
-        // the Validator success with NO Errors at All
-    }, function fail(errors){
-        // the Validator failed and all Errors passed here
-    });
+```javascript
+validation.then(() => {
+    // the Validator success with NO Errors at All
+}, (errors) => {
+    // the Validator failed and all Errors passed here
+});
+```
 
 ## Go Deep Into Rabbit Hole
 
 #### if you need to add custom Roles or Extend the Validator
 
-first method => you can pass Object contains your Custom Roles then pass it to the constractor.
+first method => you can create Object contains your Custom Roles then pass it to the constractor.
 
-    const RolesObject = {
-        "new_role": (options) => {
-            return new Promise((resolve, reject) => {
-                if(validationPassed === true){
-                    return resolve();
-                }
+```javascript
+const RolesObject = {
+    "new_role": (options) => {
+        return new Promise((resolve, reject) => {
+            if(validationPassed === true){
+                return resolve();
+            }
 
-                return reject("$s failed with error message");
-            });
-        }
-    };
+            return reject("$s failed with error message");
+        });
+    },
+    "another_awesome_role": ...
+};
 
-    // create new instance from Core
-    const Validator = new ValidatorCore(RolesObject);
+// create new instance from Core
+const Validator = new ValidatorCore(RolesObject);
+```
 
 second method => you can add or register custom Role after Intiating the Validator by using `register` method
 
-    Validator.register("customRoleName", (options) => {});
+```javascript
+Validator.register("customRoleName", (options) => {});
+```
 
-all registerd role must have Handler that accept `options` parameters that contains `value`, `params`, `inputs` and `roles`
+all registerd roles must have Handler that accept `options` parameter that contains `value`, `params`, `inputs` and `roles`
 
 1. `value` => the value that User passed into Inputs Object.
-2. `params` => any additional params the passed to the role
+2. `params` => any additional params passed to the role
 3. `inputs` => all user inputs in it's original shap in case you need to access another value.
 4. `roles` => the main RolesObject in case you need to interact with any Other Role.
 
@@ -80,7 +99,9 @@ all registerd role must have Handler that accept `options` parameters that conta
 if there is a case when you need to replace exist role with new one with the same name .. in other words you need to Overwrite exist Role you can do this by add `:force` to the name of the Role.
 but Notice that this is NOT Recommended because there is some Roles Depend on other Roles so be careful when you do this Overwriting thing.
 
-    Validator.register("required:force", (options) => {});
+```javascript
+Validator.register("required:force", (options) => {});
+```
 
 this will force the Validator to Unregister the Old `required` Role and add Yours.
 
@@ -225,4 +246,4 @@ this will force the Validator to Unregister the Old `required` Role and add Your
 ## License
 This project is licensed under the GPL v3 License - see the [LICENSE.md](LICENSE.md) file for details
 
-### I'm Welcoming with any comment or advise or you can open new issue on [github](https://github.com/ibrahimsaqr/he-validation/issues)
+### I'm Welcoming with any comment or advise or you can open new issue on [github](https://github.com/ibrahim-sakr/he-validation/issues)
